@@ -1,0 +1,37 @@
+local Deduce = {}
+
+Deduce.AggressionLevel = 0
+Deduce.MaxLevel = 10
+
+function Deduce.AnalyzeSituation(actionType)
+    actionType = string.upper(actionType or "")
+
+    if actionType == "AT" then
+        Deduce.AggressionLevel = math.min(Deduce.AggressionLevel + 1, Deduce.MaxLevel)
+
+    elseif actionType == "CALM" then
+        Deduce.AggressionLevel = math.max(Deduce.AggressionLevel - 1, 0)
+
+    elseif actionType == "IDLE" then
+        if Deduce.AggressionLevel > 0 then
+            Deduce.AggressionLevel = Deduce.AggressionLevel - 0.5
+        end
+    end
+
+    -- AI behavior response
+    if Deduce.AggressionLevel >= 8 then
+        return "WARNING: Combat instincts overclocked. Hostile tendency rising."
+    elseif Deduce.AggressionLevel >= 5 then
+        return "System adapting... aggression level increasing."
+    elseif Deduce.AggressionLevel >= 2 then
+        return "Minor combat pattern detected."
+    end
+
+    return "System stable. No abnormal behavior."
+end
+
+function Deduce.Reset()
+    Deduce.AggressionLevel = 0
+end
+
+return Deduce
