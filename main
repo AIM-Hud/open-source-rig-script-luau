@@ -1,0 +1,154 @@
+local BaseURL = "https://raw.githubusercontent.com/AIM-Hud/open-source-rig-script-luau/main/"
+
+local Players = game:Service("Players")
+local TweenService = game:Service("TweenService")
+local localPlayer = Players.LocalPlayer
+
+local AI_Logic, AI_Chat, AI_Deduce
+
+local function loadGithubModule(fileName)
+    local url = BaseURL .. fileName
+    local success, scriptContent = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if success and scriptContent then
+        local chunk, err = loadstring(scriptContent)
+        if chunk then
+            print("✔️ Loaded: " .. fileName)
+            return chunk()
+        else
+            warn("❌ Compile error " .. fileName .. ": " .. tostring(err))
+        end
+    else
+        warn("❌ Failed to fetch: " .. fileName)
+    end
+    return nil
+end
+
+print("Connecting GitHub repo...")
+
+AI_Logic = loadGithubModule("AI.logic.txt")
+AI_Chat = loadGithubModule("AI.chat.txt")
+AI_Deduce = loadGithubModule("AI.deduce.txt")
+
+if not (AI_Logic and AI_Chat and AI_Deduce) then
+    warn("⚠️ Failed to load core modules")
+    return
+end
+
+print("Repo linked successfully")
+
+local aiRig = Instance.new("Model")
+aiRig.Name = "CLIENT_AI_RIG"
+aiRig.Parent = workspace
+
+local hrp = Instance.new("Part")
+hrp.Name = "HumanoidRootPart"
+hrp.Size = Vector3.new(2, 2, 1)
+hrp.Color = Color3.fromRGB(0, 255, 150)
+hrp.Material = Enum.Material.Neon
+hrp.Anchored = true
+hrp.CanCollide = false
+hrp.Position = (localPlayer.Character and localPlayer.Character:GetPivot().Position or Vector3.zero) + Vector3.new(0, 3, -6)
+hrp.Parent = aiRig
+
+local head = Instance.new("Part")
+head.Name = "Head"
+head.Size = Vector3.new(1.2, 1.2, 1.2)
+head.Color = Color3.fromRGB(255, 255, 255)
+head.CanCollide = false
+head.Parent = aiRig
+
+local headWeld = Instance.new("Weld")
+headWeld.Part0 = hrp
+headWeld.Part1 = head
+headWeld.C0 = CFrame.new(0, 1.5, 0)
+headWeld.Parent = head
+
+local sword = Instance.new("Part")
+sword.Name = "AI_Sword"
+sword.Size = Vector3.new(0.4, 3.5, 0.4)
+sword.Color = Color3.fromRGB(255, 0, 50)
+sword.Material = Enum.Material.Glass
+sword.CanCollide = false
+sword.Parent = aiRig
+
+local swordWeld = Instance.new("Weld")
+swordWeld.Part0 = hrp
+swordWeld.Part1 = sword
+swordWeld.C0 = CFrame.new(1.2, 0, -1) * CFrame.Angles(math.rad(90), 0, 0)
+swordWeld.Parent = sword
+
+local hum = Instance.new("Humanoid")
+hum.Parent = aiRig
+aiRig.PrimaryPart = hrp
+
+task.wait(1)
+AI_Chat.Say(aiRig, "hello")
+
+local function triggerAICommand(command, targetPosition)
+    AI_Chat.Say(aiRig, command)
+    AI_Logic.Execute(command, aiRig, targetPosition, swordWeld)
+    local result = AI_Deduce.AnalyzeSituation(command)
+    print("[AI Deduce]: " .. result)
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.ResetOnSpawn = false
+pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
+if not ScreenGui.Parent then
+    ScreenGui.Parent = localPlayer:WaitForChild("PlayerGui")
+end
+
+local Menu = Instance.new("Frame")
+Menu.Size = UDim2.new(0, 240, 0, 70)
+Menu.Position = UDim2.new(0.5, -120, 0.8, 0)
+Menu.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Menu.BackgroundTransparency = 0.3
+Menu.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = Menu
+
+local UIList = Instance.new("UIListLayout")
+UIList.FillDirection = Enum.FillDirection.Horizontal
+UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+UIList.VerticalAlignment = Enum.VerticalAlignment.Center
+UIList.Padding = UDim.new(0, 10)
+UIList.Parent = Menu
+
+local function createBtn(name, cmd)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0, 60, 0, 45)
+    b.Text = name
+    b.Font = Enum.Font.SourceSansBold
+    b.TextSize = 16
+    b.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 6)
+    c.Parent = b
+
+    b.MouseButton1Click:Connect(function()
+        if cmd == "GT" then
+            AI_Chat.Say(aiRig, "gt_pending")
+            local mouse = localPlayer:GetMouse()
+            local conn
+            conn = mouse.Button1Down:Connect(function()
+                triggerAICommand("GT", mouse.Hit.Position)
+                conn:Disconnect()
+            end)
+        else
+            triggerAICommand(cmd)
+        end
+    end)
+
+    b.Parent = Menu
+end
+
+createBtn("JP", "JP")
+createBtn("AT", "AT")
+createBtn("GT", "GT")
