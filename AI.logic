@@ -1,1 +1,18 @@
+local Logic = {}
+function Logic.Execute(actionType, rig, targetPos)
+    local hrp = rig:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    if actionType == "JP" then
+        hrp.Velocity = Vector3.new(0, 50, 0)
+    elseif actionType == "AT" then
+        -- Logic vung kiếm chém
+        print("AI đang thực hiện logic tấn công!")
+    elseif actionType == "GT" and targetPos then
+        -- Logic di chuyển tới targetPos
+        local tween = game:GetService("TweenService"):Create(hrp, TweenInfo.new(1), {CFrame = CFrame.new(targetPos)})
+        tween:Play()
+    end
+end
+return Logic
 
