@@ -1,0 +1,50 @@
+local ChatSystem = {}
+ChatSystem.Memory = {
+    ["hello"] = {
+        "Greetings, player.",
+        "System initialized successfully.",
+        "Hello there.",
+        "Welcome back, user.",
+        "1x4 is just a name."
+    },
+
+    ["jp"] = {
+        "Jump!",
+        "Executing jump command!",
+        "Up and away!",
+        "Leap!",
+        "Boosting vertical movement!"
+    },
+
+    ["at"] = {
+        "Engaging target.",
+        "Attack mode activated!",
+        "Clearing enemies...",
+        "Strike now!",
+        "Combat protocol enabled!"
+    },
+
+    ["gt"] = {
+        "Moving to destination...",
+        "Navigating...",
+        "Pathfinding initiated.",
+        "On my way.",
+        "Relocating unit."
+    }
+}
+
+function ChatSystem.Say(rig, keyword)
+    local phrases = ChatSystem.Memory[string.lower(keyword)]
+    if phrases and #phrases > 0 then
+        local text = phrases[math.random(1, #phrases)]
+
+        local chatService = game:GetService("Chat")
+        local root = rig:FindFirstChild("HumanoidRootPart")
+
+        if root then
+            chatService:Chat(root, text, Enum.ChatColor.Blue)
+        end
+    end
+end
+
+return ChatSystem
